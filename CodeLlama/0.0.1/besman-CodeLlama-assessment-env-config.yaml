@@ -7,6 +7,8 @@
 # If you are not using any particular value, remove it or comment it(#).
 #*** - These variables should not be removed, nor left empty.
 
+BESMAN_ORG: "meta-llama"
+
 # project/model/training dataset
 BESMAN_ARTIFACT_TYPE: model
 
