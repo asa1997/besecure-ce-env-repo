@@ -15,7 +15,7 @@ function __besman_install {
         [[ -z $(which python3) ]] && __besman_echo_red "Python3 installation failed" && return 1
     fi
 
-    __besman_repo_clone "$BESMAN_ORG" "PurpleLlama" "$BESMAN_TOOL_PATH" || return 1
+    __besman_repo_clone "$BESMAN_ORG" "PurpleLlama" "$BESMAN_TOOL_PATH/PurpleLlama" || return 1
 
     __besman_echo_white "Installing Cybersecurity Benchmarks..."
     python3 -m venv ~/.venvs/cyberseceval
