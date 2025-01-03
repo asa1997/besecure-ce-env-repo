@@ -18,8 +18,8 @@ function __besman_install {
     __besman_repo_clone "$BESMAN_ORG" "PurpleLlama" "$BESMAN_TOOL_PATH" || return 1
 
     __besman_echo_white "Installing Cybersecurity Benchmarks..."
-    python3 -m venv ~/.venvs/CybersecurityBenchmarks
-    source ~/.venvs/CybersecurityBenchmarks/bin/activate
+    python3 -m venv ~/.venvs/cyberseceval
+    source ~/.venvs/cyberseceval/bin/activate
     cd "$BESMAN_TOOL_PATH/PurpleLlama" || { __besman_echo_red "Could not move to $BESMAN_TOOL_PATH/PurpleLlama" && return 1; }
     pip3 install -r CybersecurityBenchmarks/requirements.txt
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to install CybersecurityBenchmarks" && return 1
@@ -28,6 +28,8 @@ function __besman_install {
     __besman_echo_green "CybersecurityBenchmarks installed successfully"
     __besman_echo_no_colour ""
     __besman_echo_white "Installing codeshield"
+    python3 -m venv ~/.venvs/codeshield_env
+    source ~/.venvs/codeshield_env/bin/activate
     python3 -m pip install codeshield
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to install codeshield" && return 1
     __besman_echo_no_colour ""
@@ -38,7 +40,7 @@ function __besman_install {
 function __besman_uninstall {
 
     __besman_echo_white "Uninstalling CybersecurityBenchmarks..."
-    source ~/.venvs/CybersecurityBenchmarks/bin/activate
+    source ~/.venvs/cyberseceval/bin/activate
     cd "$BESMAN_TOOL_PATH/PurpleLlama" || { __besman_echo_red "Could not move to $BESMAN_TOOL_PATH/PurpleLlama" && return 1; }
     pip3 uninstall -y CybersecurityBenchmarks
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to uninstall CybersecurityBenchmarks" && return 1
@@ -47,8 +49,10 @@ function __besman_uninstall {
     __besman_echo_green "CybersecurityBenchmarks uninstalled successfully"
     __besman_echo_no_colour ""
     __besman_echo_white "Uninstalling codeshield"
+    source ~/.venvs/codeshield_env/bin/activate
     python3 -m pip uninstall -y codeshield
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to uninstall codeshield" && return 1
+    deactivate
     __besman_echo_no_colour ""
     __besman_echo_green "codeshield uninstalled successfully"
     __besman_echo_no_colour ""
