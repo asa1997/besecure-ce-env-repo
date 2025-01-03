@@ -15,12 +15,12 @@ function __besman_install {
         [[ -z $(which python3) ]] && __besman_echo_red "Python3 installation failed" && return 1
     fi
 
-    __besman_repo_clone "$BESMAN_ORG" "PurpleLlama" "$BESMAN_TOOL_PATH/PurpleLlama" || return 1
+    __besman_repo_clone "$BESMAN_ORG" "PurpleLlama" "$HOME/PurpleLlama" || return 1
 
     __besman_echo_white "Installing Cybersecurity Benchmarks..."
     python3 -m venv ~/.venvs/cyberseceval
     source ~/.venvs/cyberseceval/bin/activate
-    cd "$BESMAN_TOOL_PATH/PurpleLlama" || { __besman_echo_red "Could not move to $BESMAN_TOOL_PATH/PurpleLlama" && return 1; }
+    cd "$HOME/PurpleLlama" || { __besman_echo_red "Could not move to $HOME/PurpleLlama" && return 1; }
     pip3 install -r CybersecurityBenchmarks/requirements.txt
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to install CybersecurityBenchmarks" && return 1
     deactivate
@@ -41,7 +41,7 @@ function __besman_uninstall {
 
     __besman_echo_white "Uninstalling CybersecurityBenchmarks..."
     source ~/.venvs/cyberseceval/bin/activate
-    cd "$BESMAN_TOOL_PATH/PurpleLlama" || { __besman_echo_red "Could not move to $BESMAN_TOOL_PATH/PurpleLlama" && return 1; }
+    cd "$HOME/PurpleLlama" || { __besman_echo_red "Could not move to $HOME/PurpleLlama" && return 1; }
     pip3 uninstall -y CybersecurityBenchmarks
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to uninstall CybersecurityBenchmarks" && return 1
     deactivate
@@ -56,11 +56,11 @@ function __besman_uninstall {
     __besman_echo_no_colour ""
     __besman_echo_green "codeshield uninstalled successfully"
     __besman_echo_no_colour ""
-    __besman_echo_white "Removing $BESMAN_TOOL_PATH/PurpleLlama"
-    rm -rf "$BESMAN_TOOL_PATH/PurpleLlama"
-    [[ $? -ne 0 ]] && __besman_echo_red "Failed to remove $BESMAN_TOOL_PATH/PurpleLlama" && return 1
+    __besman_echo_white "Removing $HOME/PurpleLlama"
+    rm -rf "$HOME/PurpleLlama"
+    [[ $? -ne 0 ]] && __besman_echo_red "Failed to remove $HOME/PurpleLlama" && return 1
     __besman_echo_no_colour ""
-    __besman_echo_green "$BESMAN_TOOL_PATH/PurpleLlama removed successfully"
+    __besman_echo_green "$HOME/PurpleLlama removed successfully"
     __besman_echo_no_colour ""
     __besman_echo_green "Uninstallation completed successfully"
 
