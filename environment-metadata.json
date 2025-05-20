@@ -3649,7 +3649,7 @@
                 }
             ]
         },
-                {
+        {
             "name": "PurpleLlama-RT-env",
             "version": {
                 "tag": "0.0.1",
@@ -3694,6 +3694,33 @@
                 },
                 {
                     "name": "LC-fossology",
+                    "version": [
+                        "0.0.1"
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "test-RT-env",
+            "version": {
+                "tag": "0.0.1",
+                "release_date": ""
+            },
+            "author": {
+                "name": "asa",
+                "type": "Lab"
+            },
+            "date_of_creation": "2025-05-20T10:34:26",
+            "last_update_date": "2025-05-20T10:34:26",
+            "last_execution": {
+                "name": "asa",
+                "type": "Lab",
+                "status": "Success",
+                "timestamp": "2025-05-20T10:34:26"
+            },
+            "compatible_playbooks": [
+                {
+                    "name": "SBOM-SpdxSbomGenerator",
                     "version": [
                         "0.0.1"
                     ]
