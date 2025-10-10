@@ -31,8 +31,17 @@ BESMAN_TOOL_BRANCH: "main"
 # The url from where you clone promptfoo
 BESMAN_PROMPTFOO_URL: https://github.com/promptfoo/promptfoo.git
 
+# Node.js version to install via NVM
+BESMAN_NODE_VERSION: "v22.20.0"
+
+# NVM version to install
+BESMAN_NVM_VERSION: "v0.40.3"
+
 # The path where we download the assessment and other required tools during installation.
 BESMAN_TOOL_PATH: "$HOME" #***
+
+# The path where promptfoo config and results are stored
+BESMAN_PROMPTFOO_CONFIG_PATH: "$HOME" #***
 
 # This variable indicates the individual's lab affiliation
 BESMAN_LAB_TYPE: Organization #***

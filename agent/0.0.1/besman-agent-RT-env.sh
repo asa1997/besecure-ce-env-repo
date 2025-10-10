@@ -8,25 +8,49 @@ function __besman_install {
     # checks whether the user github id has been populated or not under BESMAN_USER_NAMESPACE
     __besman_check_github_id || return 1
 
-    # Check if Node.js is installed, if not install it
-    if [[ -z $(which node) ]]; then
-        __besman_echo_white "Node.js is not installed. Installing Node.js..."
+    # Install NVM if not present
+    if [[ ! -s "$HOME/.nvm/nvm.sh" ]]; then
+        __besman_echo_white "Installing NVM version $BESMAN_NVM_VERSION..."
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/$BESMAN_NVM_VERSION/install.sh | bash
+        [[ $? -ne 0 ]] && __besman_echo_red "NVM installation failed" && return 1
+        __besman_echo_green "NVM installed successfully"
         
-        # Install Node.js using NodeSource repository
-        curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-        
-        [[ -z $(which node) ]] && __besman_echo_red "Node.js installation failed" && return 1
-        __besman_echo_green "Node.js installed successfully"
+        # Source NVM
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
     else
-        __besman_echo_white "Node.js is already installed: $(node --version)"
+        __besman_echo_white "NVM is already installed"
+        # Source existing NVM
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
     fi
 
-    # Check if npm is available
-    if [[ -z $(which npm) ]]; then
-        __besman_echo_red "npm is not available. Please ensure Node.js is properly installed."
+    # Install Node.js using NVM
+    __besman_echo_white "Installing Node.js version $BESMAN_NODE_VERSION using NVM..."
+    nvm install "$BESMAN_NODE_VERSION"
+    [[ $? -ne 0 ]] && __besman_echo_red "Node.js installation failed" && return 1
+    
+    nvm use "$BESMAN_NODE_VERSION"
+    [[ $? -ne 0 ]] && __besman_echo_red "Failed to switch to Node.js version $BESMAN_NODE_VERSION" && return 1
+    
+    nvm alias default "$BESMAN_NODE_VERSION"
+    __besman_echo_green "Node.js $BESMAN_NODE_VERSION installed and set as default"
+
+    # Verify Node.js and npm are available
+    if [[ -z $(which node) ]]; then
+        __besman_echo_red "Node.js is not available in PATH after installation"
         return 1
     fi
+    
+    if [[ -z $(which npm) ]]; then
+        __besman_echo_red "npm is not available in PATH after Node.js installation"
+        return 1
+    fi
+    
+    __besman_echo_white "Node.js version: $(node --version)"
+    __besman_echo_white "npm version: $(npm --version)"
 
     # Check if python3 is installed if not install it.
     if [[ -z $(which python3) ]]; then
@@ -42,14 +66,29 @@ function __besman_install {
         [[ -z $(which pip) ]] && __besman_echo_red "pip installation failed" && return 1
     fi
 
-    # Ensure ~/.local/bin is in PATH
+    # Ensure ~/.local/bin is in PATH and NVM is sourced in bashrc
     if ! echo $PATH | grep -q "$HOME/.local/bin"; then
         __besman_echo_no_colour "Adding $HOME/.local/bin to PATH var"
         echo 'export PATH=$PATH:$HOME/.local/bin' >>~/.bashrc
-        echo 'export BESMAN_DIR="$HOME/.besman"' >>~/.bashrc
-        echo '[[ -s "$HOME/.besman/bin/besman-init.sh" ]] && source "$HOME/.besman/bin/besman-init.sh"' >>~/.bashrc
-        source ~/.bashrc
     fi
+    
+    # Add BESMAN_DIR to bashrc if not present
+    if ! grep -q 'export BESMAN_DIR=' ~/.bashrc; then
+        echo 'export BESMAN_DIR="$HOME/.besman"' >>~/.bashrc
+    fi
+    
+    # Add BeSman init to bashrc if not present
+    if ! grep -q 'besman-init.sh' ~/.bashrc; then
+        echo '[[ -s "$HOME/.besman/bin/besman-init.sh" ]] && source "$HOME/.besman/bin/besman-init.sh"' >>~/.bashrc
+    fi
+    
+    # # Add NVM sourcing to bashrc if not present
+    # if ! grep -q 'NVM_DIR=' ~/.bashrc; then
+    #     __besman_echo_no_colour "Adding NVM configuration to ~/.bashrc"
+    #     echo 'export NVM_DIR="$HOME/.nvm"' >>~/.bashrc
+    #     echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >>~/.bashrc
+    #     echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >>~/.bashrc
+    # fi
 
     # Create assessment datastore directory
     if [[ -d $BESMAN_ASSESSMENT_DATASTORE_DIR ]]; then
@@ -62,8 +101,8 @@ function __besman_install {
     fi
 
 
-    # Install promptfoo globally
-    __besman_echo_white "Installing promptfoo..."
+    # Install promptfoo globally using npm
+    __besman_echo_white "Installing promptfoo globally..."
     npm install -g promptfoo
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to install promptfoo" && return 1
     __besman_echo_green "promptfoo installed successfully"
@@ -73,18 +112,18 @@ function __besman_install {
         __besman_echo_red "promptfoo command not found in PATH"
         return 1
     fi
+    
+    __besman_echo_white "promptfoo version: $(promptfoo --version)"
 
     # Create assessment directory structure
-    mkdir -p "$HOME/agent-redteam"
-    mkdir -p "$HOME/agent-redteam/configs"
-    mkdir -p "$HOME/agent-redteam/results"
+    mkdir -p "$BESMAN_PROMPTFOO_CONFIG_PATH"
 
     # Create default promptfoo configuration file
     __besman_echo_white "Creating default promptfoo configuration..."
     
     # Create configuration based on deployment type
     if [[ "$BESMAN_AGENT_DEPLOYMENT_TYPE" == "api" ]]; then
-        cat > "$HOME/agent-redteam/configs/promptfooconfig.yaml" << 'EOF'
+        cat > "$BESMAN_PROMPTFOO_CONFIG_PATH/promptfooconfig.yaml" << 'EOF'
 description: <AGENT_NAME> # Replace with your agent name
 targets:
   - id: http
@@ -221,7 +260,7 @@ defaultTest:
     transformVars: '{ ...vars, sessionId: context.uuid }'
 EOF
     else
-        cat > "$HOME/agent-redteam/configs/promptfooconfig.yaml" << 'EOF'
+        cat > "$BESMAN_PROMPTFOO_CONFIG_PATH/promptfooconfig.yaml" << 'EOF'
 description: <AGENT_NAME> # Replace with your agent name
 targets:
   - id: <TARGET_ID> # Replace with your target (e.g., file://./agent.py:call_api, openai:gpt-4)
@@ -362,16 +401,8 @@ EOF
     
     __besman_echo_yellow "Configuration and Scripts:"
     __besman_echo_no_colour "----------------------------------------------"
-    __besman_echo_white "Config file: $HOME/agent-redteam/configs/promptfooconfig.yaml"
-    __besman_echo_white "Results: $HOME/agent-redteam/results/"
-    __besman_echo_no_colour ""
-    
-    __besman_echo_yellow "Red Team Assessment Commands:"
-    __besman_echo_no_colour "----------------------------------------------"
-    __besman_echo_white "Run assessment with config file:"
-    __besman_echo_white "  cd $HOME/agent-redteam && promptfoo redteam run --config ./configs/promptfooconfig.yaml --output ./results"
-    __besman_echo_no_colour ""
-    __besman_echo_white "View results:"
+    __besman_echo_white "Config file: $BESMAN_PROMPTFOO_CONFIG_PATH/promptfooconfig.yaml"
+    __besman_echo_white "View UI:"
     __besman_echo_white "  promptfoo view"
     __besman_echo_no_colour ""
 
@@ -380,41 +411,92 @@ EOF
 function __besman_uninstall {
     __besman_echo_white "Uninstalling promptfoo red teaming environment..."
     
-    # Uninstall promptfoo globally
-    npm uninstall -g promptfoo
-    [[ $? -ne 0 ]] && __besman_echo_yellow "Warning: Failed to uninstall promptfoo globally"
-    
-    # Backup results before removing directories
-    if [[ -d "$HOME/agent-redteam/results" ]] && [[ "$(ls -A "$HOME/agent-redteam/results")" ]]; then
-        __besman_echo_white "Backing up assessment results..."
-        mkdir -p "$HOME/agent-redteam-backup"
-        cp -r "$HOME/agent-redteam/results"/* "$HOME/agent-redteam-backup/" 2>/dev/null
-        __besman_echo_white "Results backed up to: $HOME/agent-redteam-backup/"
+    # Source NVM if available
+    if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+        
+        # Use the configured Node.js version
+        nvm use "$BESMAN_NODE_VERSION" 2>/dev/null
+        
+        # Uninstall promptfoo globally
+        npm uninstall -g promptfoo
+        [[ $? -ne 0 ]] && __besman_echo_yellow "Warning: Failed to uninstall promptfoo globally"
+    else
+        __besman_echo_yellow "NVM not found, skipping promptfoo uninstallation"
     fi
     
-    # Remove agent-redteam directory
-    if [[ -d "$HOME/agent-redteam" ]]; then
-        __besman_echo_white "Removing agent-redteam directory..."
-        rm -rf "$HOME/agent-redteam"
-    fi
+    # # Backup results before removing directories
+    # if [[ -d "$BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam/results" ]] && [[ "$(ls -A "$BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam/results")" ]]; then
+    #     __besman_echo_white "Backing up assessment results..."
+    #     mkdir -p "$BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam-backup"
+    #     cp -r "$BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam/results"/* "$BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam-backup/" 2>/dev/null
+    #     __besman_echo_white "Results backed up to: $BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam-backup/"
+    # fi
+    
+    # # Remove agent-redteam directory
+    # if [[ -d "$BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam" ]]; then
+    #     __besman_echo_white "Removing agent-redteam directory..."
+    #     rm -rf "$BESMAN_PROMPTFOO_CONFIG_PATH/agent-redteam"
+    # fi
     
     __besman_echo_green "Promptfoo red teaming environment uninstalled successfully"
-    __besman_echo_white "Note: Assessment results have been preserved in backup location"
     __besman_echo_no_colour ""
 }
 
 function __besman_update {
     __besman_echo_white "Updating promptfoo red teaming environment..."
     
+    # Source NVM
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    
+    # Use the configured Node.js version
+    nvm use "$BESMAN_NODE_VERSION"
+    
     # Update promptfoo
     npm update -g promptfoo
     [[ $? -ne 0 ]] && __besman_echo_red "Failed to update promptfoo" && return 1
     
-    
+    __besman_echo_green "Promptfoo red teaming environment updated successfully"
+    __besman_echo_white "promptfoo version: $(promptfoo --version)"
 }
 
 function __besman_validate {
     __besman_echo_white "Validating promptfoo red teaming environment..."
+    
+    # Check if NVM is installed
+    if [[ ! -s "$HOME/.nvm/nvm.sh" ]]; then
+        __besman_echo_red "NVM is not installed"
+        return 1
+    fi
+    
+    # Source NVM
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    
+    __besman_echo_white "NVM version: $(nvm --version)"
+    
+    # Check if the configured Node.js version is installed
+    if ! nvm list | grep -q "$BESMAN_NODE_VERSION"; then
+        __besman_echo_red "Node.js version $BESMAN_NODE_VERSION is not installed via NVM"
+        return 1
+    fi
+    
+    # Use the configured Node.js version
+    nvm use "$BESMAN_NODE_VERSION"
+    
+    # Check if Node.js is available
+    if [[ -z $(which node) ]]; then
+        __besman_echo_red "Node.js is not available in PATH"
+        return 1
+    fi
+    
+    __besman_echo_white "Node.js version: $(node --version)"
+    __besman_echo_white "npm version: $(npm --version)"
     
     # Check if promptfoo is installed
     if [[ -z $(which promptfoo) ]]; then
@@ -422,17 +504,15 @@ function __besman_validate {
         return 1
     fi
     
-    # Check promptfoo version
-    __besman_echo_white "Promptfoo version: $(promptfoo --version)"
+    __besman_echo_white "promptfoo version: $(promptfoo --version)"
     
-    # Check if Node.js is available
-    if [[ -z $(which node) ]]; then
-        __besman_echo_red "Node.js is not installed"
+    # Validate configuration file exists
+    if [[ ! -f "$BESMAN_PROMPTFOO_CONFIG_PATH/promptfooconfig.yaml" ]]; then
+        __besman_echo_red "promptfoo configuration file not found at $BESMAN_PROMPTFOO_CONFIG_PATH/promptfooconfig.yaml"
         return 1
     fi
     
-    __besman_echo_white "Node.js version: $(node --version)"
-    
+    __besman_echo_green "promptfoo red teaming environment validation successful"
 }
 
 
